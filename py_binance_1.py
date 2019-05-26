@@ -6,8 +6,8 @@ from decimal import Decimal
 
 # Global Variable initialization/ declaration
 
-api_key = ''
-api_secret = ''
+api_key = 'yPDhNNsZTLrcJu1dNOzPU2zYmIBXnC9C6qkfzQH3YKVXLXGqa0DF3kFFVZZjy2Hy'
+api_secret = '4DNM7yrmWsCnAStjC92ml9fQAKoabS2x1jdpVEd8xXGsvg9SGorYcrYv8xbglmru'
 recv_window = 6000000
 
 pair = "EOSUSDT"
@@ -25,10 +25,7 @@ placed_buy_order = True
 
 ordered_id = 0
 
-MIN = float(6.2)
-MAX = float(6.6)
-
-best_profit = float(0.5/100)
+lowest_profit = float(0.5/100)
 
 '''
 # get market depth
@@ -95,6 +92,16 @@ while True:
 
     #opened_order_counter = 0
     while (len(orders) > 0):
+        # orders = client.get_open_orders(symbol=pair)
+        # time.sleep(30)
+        # opened_order_counter = opened_order_counter + 1
+        # if opened_order_counter == 3:
+        #     opened_order_counter = 0
+        #     client.cancel_order(
+        #         symbol=pair,
+        #         orderId=str(ordered_id))
+        #     time.sleep(30)
+        #     break;
         orders = client.get_open_orders(symbol=pair)
         time.sleep(30)
 
@@ -109,12 +116,21 @@ while True:
         if selling_price <= current_price:
             ordered_id = sell_limit_order(pair, quantity, current_price)
             print ("Latest best selling order: ", str(ordered_id))
+        # elif (selling_price - current_price * (1 + best_profit)) <= 0:
+        #     print ("Selling price: ", str(selling_price))
+        #     ordered_id = sell_limit_order(pair, quantity, selling_price)
+        #     print ("Latest best profit selling order: ", str(ordered_id))
+        # elif current_price <= MAX and current_price >= MIN:
+        #     ordered_id = sell_limit_order(pair, quantity, current_price)
+        #     print ("Latest selling order: ", str(ordered_id))
     else:
         buying_price = float(sold_price * (1 - profit))
+        lowest_price_bid = float(sold_price * (1 - lowest_profit))
+        highest_price_bid = float(sold_price * (1 + lowest_profit))
         if buying_price >= current_price:
             ordered_id = buy_limit_order(pair, quantity, current_price)
             print ("Latest best buying order: ", str(ordered_id))
-        elif current_price <= MAX and current_price >= MIN:
+        elif current_price <= highest_price_bid and current_price >= lowest_price_bid:
             ordered_id = buy_limit_order(pair, quantity, current_price)
             print ("Latest alternative buying order: ", str(ordered_id))
 

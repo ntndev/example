@@ -2,7 +2,7 @@
 from binance.client import Client
 from binance.enums import *
 import time
-from decimal import Decimal
+from decimal import *
 
 # Global Variable initialization/ declaration
 
@@ -12,20 +12,20 @@ recv_window = 6000000
 
 pair = "EOSUSDT"
 
-profit = float(0.2/100) # profit 0.2%
+profit = float(0.7/100) # profit 0.2%
 sold_price = float(0)
-bought_price = float(6.3150)
+bought_price = float(8.05)
 
 selling_price = float(0)
 buying_price = float(0)
 
-quantity = round(Decimal(1.68), 2)
+quantity = 0
 
-placed_buy_order = True
+placed_buy_order = False
 
 ordered_id = 0
 
-lowest_profit = float(0.5/100)
+lowest_profit = float(0.1/100)
 
 '''
 # get market depth
@@ -79,6 +79,12 @@ def sell_limit_order(_symbol, _quantity, _price):
     sold_price = float(_price)
 
     return order['orderId']
+
+def getBalance(_asset):
+    ret = client.get_asset_balance(asset=_asset)
+    ret = ret['free']
+    return ret
+
 # End of Function definition
 
 
@@ -112,34 +118,46 @@ while True:
     print ("placed_buy_order: ", placed_buy_order)
 
     if placed_buy_order:
+        '''
         selling_price = float(bought_price * (1 + profit))
+        current_balance = Decimal(getBalance('EOS')).quantize(Decimal('.01'), rounding=ROUND_DOWN)
         if selling_price <= current_price:
-            ordered_id = sell_limit_order(pair, quantity, current_price)
-            print ("Latest best selling order: ", str(ordered_id))
-        # elif (selling_price - current_price * (1 + best_profit)) <= 0:
-        #     print ("Selling price: ", str(selling_price))
-        #     ordered_id = sell_limit_order(pair, quantity, selling_price)
-        #     print ("Latest best profit selling order: ", str(ordered_id))
-        # elif current_price <= MAX and current_price >= MIN:
-        #     ordered_id = sell_limit_order(pair, quantity, current_price)
-        #     print ("Latest selling order: ", str(ordered_id))
+            ordered_id = sell_limit_order(pair, current_balance, current_price)
+            print ("Latest best selling: orderid ", str(ordered_id), " price ", str(current_price), " quantity ", str(current_balance))
+        '''
+        if current_price >= float(8.05):
+           ordered_id = sell_limit_order(pair, current_balance, current_price)
+           print ("Latest best selling: orderid ", str(ordered_id), " price ", str(current_price), " quantity ", str(current_balance))
     else:
-        buying_price = float(sold_price * (1 - profit))
+        #buying_price = float(sold_price * (1 - profit))
+        buying_price = float(sold_price * (1 - lowest_profit))
         lowest_price_bid = float(sold_price * (1 - lowest_profit))
         highest_price_bid = float(sold_price * (1 + lowest_profit))
+        if current_price <= float(7.95):
+            current_balance = float(getBalance('USDT'))
+            buying_balance = float(current_balance * (1 - lowest_profit))
+            if buying_balance <= 10:
+                buying_balance = current_balance
+            quantity = Decimal(buying_balance / current_price).quantize(Decimal('.01'), rounding=ROUND_DOWN)
+            ordered_id = buy_limit_order(pair, quantity, current_price)
+            print ("Latest best buying: orderid ", str(ordered_id), " price ", str(current_price), " quantity ", str(quantity))
+        '''
         if buying_price >= current_price:
+            current_balance = float(getBalance('USDT'))
+            buying_balance = float(current_balance * (1 - lowest_profit))
+            if buying_balance <= 10:
+                buying_balance = current_balance
+            quantity = Decimal(buying_balance / current_price).quantize(Decimal('.01'), rounding=ROUND_DOWN)
             ordered_id = buy_limit_order(pair, quantity, current_price)
-            print ("Latest best buying order: ", str(ordered_id))
-        elif current_price <= highest_price_bid and current_price >= lowest_price_bid:
-            ordered_id = buy_limit_order(pair, quantity, current_price)
-            print ("Latest alternative buying order: ", str(ordered_id))
+            print ("Latest best buying: orderid ", str(ordered_id), " price ", str(current_price), " quantity ", str(quantity))
+        '''
+        #elif current_price <= highest_price_bid and current_price >= lowest_price_bid:
+        #    current_balance = float(getBalance('USDT'))
+        #    buying_balance = float(current_balance * (1 - lowest_profit))
+        #    if buying_balance <= 10:
+        #        buying_balance = current_balance
+        #    quantity = Decimal(buying_balance / current_price).quantize(Decimal('.01'), rounding=ROUND_DOWN)
+        #    ordered_id = buy_limit_order(pair, quantity, current_price)
+        #    print ("Latest alternative buying: orderid ", str(ordered_id), " price ", str(current_price), " quantity ", str(current_balance))
 
-
-    time.sleep(60)
-
-
-
-
-
-
-
+    time.sleep(20)
